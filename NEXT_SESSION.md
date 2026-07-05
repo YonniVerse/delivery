@@ -8,12 +8,13 @@
 IA de rapports de stage hebdo, et envoi (brouillon Gmail + Google Doc Drive). Migration de `code.gs`.
 
 ## 📍 État actuel
-- **Phases 0, 1, 2, 3 + 4a terminées ✅** · Prochaine : **Phase 4b** puis wiring Google (bloqué auth)
+- **Phases 0-4 terminées ✅** (tout l'automatisable/pur) · Prochaine : **setup des comptes** puis wiring
 - **Fait** : Scaffolding Next.js 16 + Vitest · skills `find-skills` + `frontend-design` ·
-  **Domaine** (`dates`, `notes`, `prompt`, `reportSchema`) · **Providers IA** (`gemini`, `groq`,
-  fabrique) + `generateReport` · **GitHub** (`fetchCommits`, `dedupeCommits`, `formatCommitsForNotes`) ·
-  **Email HTML** (`buildEmailHtml`, mono/multi-projets).
-- **Santé** : `npm run test:run` → **46 tests verts** · `typecheck` OK · `lint` OK.
+  **Domaine** (`dates`, `notes`, `prompt`, `reportSchema`) · **Providers IA** (`gemini`, `groq`) +
+  `generateReport` · **GitHub** (`fetchCommits`, `dedupeCommits`, `formatCommitsForNotes`) ·
+  **Rapport** (`buildEmailHtml`, `buildLongReportBlocks`, helpers `gmailThread`).
+- **Santé** : `npm run test:run` → **57 tests verts** · `typecheck` OK · `lint` OK.
+- Guide de setup : voir **`docs/SETUP.md`**.
 
 ## 🧭 Décisions verrouillées (ne pas re-débattre)
 - Next.js 15 (App Router, TS strict) · PWA · Tailwind + shadcn/ui
@@ -25,17 +26,18 @@ IA de rapports de stage hebdo, et envoi (brouillon Gmail + Google Doc Drive). Mi
 - Hébergement **Vercel** + Cron ; commits GitHub auto quotidien + repos configurables
 - **TDD strict** (Red → Green → Refactor) — voir `docs/TDD_WORKFLOW.md`
 
-## ▶️ Prochaine action (Phase 4b — rapport long, pur)
-TDD `src/lib/report/longReport.ts` : `buildLongReportBlocks(long, meta)` qui transforme le `long`
-(objet, activites_realisees, livrables, tests_effectues, difficultes, planification, conclusion) en
-une **liste ordonnée de blocs** (`{ type: 'heading1'|'heading2'|'paragraph'|'bullet', text }`),
-avec les 7 sections numérotées et les replis « Aucun … » quand une liste est vide.
-Référence : `code.gs` `creerDocRapportLong`. Ces blocs alimenteront ensuite l'API Google Docs.
-1. **Red** `longReport.test.ts` (ordre des sections, replis, titres). 2. **Green**. 3. `typecheck`+`lint`.
+## ▶️ Prochaine action — Setup des comptes (avec l'utilisateur)
+Suivre **`docs/SETUP.md`** pour obtenir les secrets, puis les mettre dans `.env.local` :
+1. **Supabase** — créer le projet → URL + anon key + service role key ; appliquer le schéma SQL.
+2. **Google Cloud** — projet + écran de consentement OAuth (test users) + identifiants OAuth
+   (scopes `gmail.compose`, `drive.file`, `documents`, `openid email profile`).
+3. **Gemini** — clé API (aistudio.google.com/apikey, gratuit).
+4. **GitHub** — token (fine-grained, lecture des repos) + username.
+5. **Vercel** — projet + `CRON_SECRET` (au moment du déploiement).
 
-> Ensuite, wiring Google (Docs/Drive + Gmail draft avec threading In-Reply-To/References) et Supabase.
-> **Bloqué côté toi** (à faire ensemble) : Supabase (projet + clés), Google OAuth
-> (scopes gmail.compose/drive.file/documents), déploiement Vercel + `CRON_SECRET`, vraies clés API.
+> Une fois les clés en place → wiring en TDD (mocks pour les tests) des clients :
+> `google/docs.ts` (créer le Doc long dans Drive à partir des blocs), `google/gmail.ts`
+> (créer le brouillon threadé), Supabase repositories, puis routes `api/cron/*`.
 
 ## 🗂️ Fichiers de cadrage
 - `docs/PLAN.md` — besoins, features, modèle de données, roadmap TDD complète
