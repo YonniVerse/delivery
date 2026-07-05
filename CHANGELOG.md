@@ -18,11 +18,16 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · Versionnage
 - **Phase 0 — Scaffolding** : projet Next.js 16 (App Router, TS strict, Tailwind, src/) ;
   configuration Vitest 4 + Testing Library + jsdom ; scripts `test`, `test:run`, `typecheck` ;
   installation du skill `find-skills` (vercel-labs).
-- **Phase 1 — Domaine** : `src/domain/dates.ts` (`formaterDateFR`, `getLibelleSemaine`,
-  `getLibelleSemaineProchaine`) portées de `code.gs` avec date de référence injectable — 6 tests verts (TDD).
+- **Phase 1 — Domaine (terminée)** : `dates.ts` (libellés semaine FR, date injectable),
+  `notes.ts` (7 sections + `notesToPromptText`), `prompt.ts` (prompt IA porté de `code.gs`),
+  `reportSchema.ts` (schémas Zod long/court + `parseReportResponse` tolérant aux ```json). TDD.
+- **Phase 2 — Providers IA (terminée)** : abstraction `LlmProvider`, `createGeminiProvider`
+  (défaut, free tier), `createGroqProvider`, fabrique `createLlmProvider` ; pipeline
+  `generateReport` (notes → prompt → IA → rapport validé), providers testés avec `fetch` mocké.
+- Suite : **33 tests verts**, `typecheck` et `lint` OK.
 
 ### À venir
-- Phase 1 (suite) : `src/domain/notes.ts` (modèle de sections + agrégation → texte prompt).
+- Phase 3 : `src/lib/github/` (client commits + `importCommits`, API mockée).
 
 ---
 

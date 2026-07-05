@@ -8,10 +8,11 @@
 IA de rapports de stage hebdo, et envoi (brouillon Gmail + Google Doc Drive). Migration de `code.gs`.
 
 ## 📍 État actuel
-- **Phase** : 0 terminée ✅ · Phase 1 (Domaine) **en cours**
-- **Fait** : Analyse `code.gs` ✅ · Archi verrouillée ✅ · Docs ✅ · Scaffolding Next.js 16 + Vitest ✅ ·
-  skill `find-skills` installé ✅ · `src/domain/dates.ts` (TDD, 6 tests verts) ✅ · typecheck OK ✅
-- **Toolchain vérifié** : `npm run test:run` et `npm run typecheck` passent.
+- **Phases 0, 1 et 2 terminées ✅** · Prochaine : **Phase 3 (GitHub)**
+- **Fait** : Scaffolding Next.js 16 + Vitest · skills `find-skills` + `frontend-design` installés ·
+  **Domaine** (`dates`, `notes`, `prompt`, `reportSchema`) · **Providers IA** (`gemini`, `groq`,
+  fabrique) + pipeline `generateReport`.
+- **Santé** : `npm run test:run` → **33 tests verts** · `typecheck` OK · `lint` OK.
 
 ## 🧭 Décisions verrouillées (ne pas re-débattre)
 - Next.js 15 (App Router, TS strict) · PWA · Tailwind + shadcn/ui
@@ -23,17 +24,18 @@ IA de rapports de stage hebdo, et envoi (brouillon Gmail + Google Doc Drive). Mi
 - Hébergement **Vercel** + Cron ; commits GitHub auto quotidien + repos configurables
 - **TDD strict** (Red → Green → Refactor) — voir `docs/TDD_WORKFLOW.md`
 
-## ▶️ Prochaine action (Phase 1 — suite)
-TDD `src/domain/notes.ts` :
-1. **Red** — écrire `notes.test.ts` : modèle de sections (Points importants, Tâches réalisées,
-   Points de blocage, Objectifs semaine prochaine, Tests effectués, Livrables produits, Commits GitHub)
-   + fonction d'agrégation `notesToPromptText(sections)` → texte brut prêt pour le prompt IA
-   (ignore les sections vides, ordre stable). Vérifier qu'il échoue.
-2. **Green** — implémenter le minimum.
-3. **Refactor** + `npm run typecheck`.
+## ▶️ Prochaine action (Phase 3 — GitHub)
+TDD `src/lib/github/client.ts` (fetch mocké, comme `src/lib/llm/gemini.test.ts`) :
+1. **Red** — `client.test.ts` : `fetchCommits({ repo, since, until, author, token })` appelle
+   `https://api.github.com/repos/{repo}/commits` avec le bon `Authorization: Bearer`, mappe
+   chaque commit → `{ sha (7), message, date }`. Cas : 200, 401 (throw), 404 (retourne []).
+2. **Green** puis `importCommits(commits[])` : dédup par `sha`, formatage pour la section notes.
+3. `typecheck` + `lint`.
 
-> Ensuite dans l'ordre Phase 1 : `prompt.ts` (repris de code.gs) puis `reportSchema.ts` (Zod).
-> Restent aussi de Phase 0 (à faire quand utile) : `src/lib/env.ts` (env typé Zod), Supabase, Playwright.
+> Logique de référence : `code.gs` `recupererCommitsDepot` / `ajouterCommitsDansNotes`.
+> Ensuite Phases 4-5 (builders Drive/Gmail + orchestration, mockés).
+> **Bloqué côté toi** (à faire ensemble plus tard) : Supabase (projet + clés), Google OAuth
+> (scopes gmail.compose/drive.file/documents), déploiement Vercel + `CRON_SECRET`, vraies clés API.
 
 ## 🗂️ Fichiers de cadrage
 - `docs/PLAN.md` — besoins, features, modèle de données, roadmap TDD complète

@@ -25,8 +25,7 @@ session Claude puisse reprendre instantanément avec le bon contexte. Procède a
    la section « décisions verrouillées » de `NEXT_SESSION.md` et à `docs/PLAN.md` si pertinent.
 
 6. **Propose un commit** : affiche un message de commit clair et atomique et demande à l'utilisateur
-   s'il veut que tu commits. Ne commit pas sans son accord. Si tu commits, termine le message par :
-   `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
+   s'il veut que tu commits. Ne commit pas sans son accord.
 
 7. **Résumé final** à l'utilisateur : 3-5 lignes — ce qui a avancé, l'état des tests, et la première
    chose à faire à la prochaine session.
