@@ -6,7 +6,7 @@ import {
   type GmailMessageRef,
 } from "./gmailThread";
 
-const moi = "yasserhamidullah@gmail.com";
+const moi = "test@gmail.com";
 
 const messages: GmailMessageRef[] = [
   { from: "assist-direction@mada-digital.net", messageId: "<m1@mada>" },
