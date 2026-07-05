@@ -8,13 +8,22 @@
 IA de rapports de stage hebdo, et envoi (brouillon Gmail + Google Doc Drive). Migration de `code.gs`.
 
 ## 📍 État actuel
-- **Phases 0-4 terminées ✅** (tout l'automatisable/pur) · Prochaine : **setup des comptes** puis wiring
-- **Fait** : Scaffolding Next.js 16 + Vitest · skills `find-skills` + `frontend-design` ·
+- **Phases 0-4 + setup des comptes terminés ✅** · Prochaine : **wiring Supabase** (schéma SQL)
+- **Fait (code)** : Scaffolding Next.js 16 + Vitest · skills `find-skills` + `frontend-design` ·
   **Domaine** (`dates`, `notes`, `prompt`, `reportSchema`) · **Providers IA** (`gemini`, `groq`) +
   `generateReport` · **GitHub** (`fetchCommits`, `dedupeCommits`, `formatCommitsForNotes`) ·
   **Rapport** (`buildEmailHtml`, `buildLongReportBlocks`, helpers `gmailThread`).
+- **Fait (setup)** : `.env.local` rempli et **hors git**. Connectivité vérifiée : **GitHub ✅**,
+  **Groq ✅** (200). Gemini/Supabase/Google : clés en place, à valider au runtime.
 - **Santé** : `npm run test:run` → **57 tests verts** · `typecheck` OK · `lint` OK.
-- Guide de setup : voir **`docs/SETUP.md`**.
+- Guide de setup : `docs/SETUP.md`.
+
+## ⚠️ Pièges rencontrés (à retenir)
+- **`.env.local`** : ne pas mettre de quotes ni d'espaces autour des valeurs (a cassé le token
+  GitHub, puis Groq). Un `awk` de normalisation existe dans l'historique de la conversation si besoin.
+- **googleapis injoignable depuis le shell sandbox** (DNS IPv6 only, pas de route) : impossible de
+  tester Gemini/Gmail/Drive/Docs en local ici → **valider sur Vercel** ou navigateur. GitHub/Groq/Supabase, eux, sont joignables.
+- Ne pas confondre **Groq** (`gsk_`, api.groq.com, notre provider) et **Grok/xAI** (`xai-`).
 
 ## 🧭 Décisions verrouillées (ne pas re-débattre)
 - Next.js 15 (App Router, TS strict) · PWA · Tailwind + shadcn/ui
@@ -26,18 +35,18 @@ IA de rapports de stage hebdo, et envoi (brouillon Gmail + Google Doc Drive). Mi
 - Hébergement **Vercel** + Cron ; commits GitHub auto quotidien + repos configurables
 - **TDD strict** (Red → Green → Refactor) — voir `docs/TDD_WORKFLOW.md`
 
-## ▶️ Prochaine action — Setup des comptes (avec l'utilisateur)
-Suivre **`docs/SETUP.md`** pour obtenir les secrets, puis les mettre dans `.env.local` :
-1. **Supabase** — créer le projet → URL + anon key + service role key ; appliquer le schéma SQL.
-2. **Google Cloud** — projet + écran de consentement OAuth (test users) + identifiants OAuth
-   (scopes `gmail.compose`, `drive.file`, `documents`, `openid email profile`).
-3. **Gemini** — clé API (aistudio.google.com/apikey, gratuit).
-4. **GitHub** — token (fine-grained, lecture des repos) + username.
-5. **Vercel** — projet + `CRON_SECRET` (au moment du déploiement).
+## ▶️ Prochaine action — Wiring Supabase (schéma SQL)
+Secrets prêts. Démarrer la persistance :
+1. Écrire la **migration SQL** (`supabase/migrations/0001_init.sql`) avec les tables de `PLAN.md` §4
+   (`settings`, `projects`, `repos`, `weeks`, `notes`, `commits`, `reports`, `oauth_tokens`) + **RLS**.
+2. Installer `@supabase/supabase-js` ; **client typé** (`src/lib/supabase/client.ts`).
+3. **Repositories** en TDD (mock du client Supabase) : commencer par `settingsRepo` puis `notesRepo`
+   (le cœur — synchro des notes). Écrire le test d'abord.
+4. Appliquer la migration sur le projet Supabase (SQL Editor ou CLI) et valider une lecture réelle.
 
-> Une fois les clés en place → wiring en TDD (mocks pour les tests) des clients :
-> `google/docs.ts` (créer le Doc long dans Drive à partir des blocs), `google/gmail.ts`
-> (créer le brouillon threadé), Supabase repositories, puis routes `api/cron/*`.
+> Ensuite : clients Google en TDD mockés (`google/docs.ts` → Doc long depuis les blocs,
+> `google/gmail.ts` → brouillon threadé via helpers `gmailThread`), auth Google, routes `api/cron/*`.
+> Rappel : tester Google **sur Vercel** (googleapis injoignable depuis le shell local).
 
 ## 🗂️ Fichiers de cadrage
 - `docs/PLAN.md` — besoins, features, modèle de données, roadmap TDD complète

@@ -35,9 +35,13 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · Versionnage
     `buildReplyHeaders`), portés de `creerBrouillonReponse`.
 - Suite : **57 tests verts**, `typecheck` et `lint` OK.
 
+### Configuré
+- **Setup des comptes terminé** : `.env.local` rempli (hors git) — Supabase, Google OAuth + Drive,
+  Gemini, Groq, GitHub, `CRON_SECRET` généré. Connectivité vérifiée : **GitHub** et **Groq** OK (200) ;
+  Gemini/Google/Supabase à valider au runtime (googleapis injoignable depuis le shell de dev).
+
 ### À venir
-- **Setup des comptes** (avec l'utilisateur) : Google Cloud OAuth, Supabase, clé Gemini, token GitHub, Vercel.
-- Puis wiring des clients Google (Docs/Drive/Gmail) + persistance Supabase + Cron.
+- Wiring **Supabase** (schéma SQL + RLS + repositories en TDD), puis clients Google (Docs/Gmail) + Cron.
 
 ---
 
