@@ -8,11 +8,12 @@
 IA de rapports de stage hebdo, et envoi (brouillon Gmail + Google Doc Drive). Migration de `code.gs`.
 
 ## 📍 État actuel
-- **Phases 0, 1 et 2 terminées ✅** · Prochaine : **Phase 3 (GitHub)**
-- **Fait** : Scaffolding Next.js 16 + Vitest · skills `find-skills` + `frontend-design` installés ·
+- **Phases 0, 1, 2, 3 + 4a terminées ✅** · Prochaine : **Phase 4b** puis wiring Google (bloqué auth)
+- **Fait** : Scaffolding Next.js 16 + Vitest · skills `find-skills` + `frontend-design` ·
   **Domaine** (`dates`, `notes`, `prompt`, `reportSchema`) · **Providers IA** (`gemini`, `groq`,
-  fabrique) + pipeline `generateReport`.
-- **Santé** : `npm run test:run` → **33 tests verts** · `typecheck` OK · `lint` OK.
+  fabrique) + `generateReport` · **GitHub** (`fetchCommits`, `dedupeCommits`, `formatCommitsForNotes`) ·
+  **Email HTML** (`buildEmailHtml`, mono/multi-projets).
+- **Santé** : `npm run test:run` → **46 tests verts** · `typecheck` OK · `lint` OK.
 
 ## 🧭 Décisions verrouillées (ne pas re-débattre)
 - Next.js 15 (App Router, TS strict) · PWA · Tailwind + shadcn/ui
@@ -24,17 +25,16 @@ IA de rapports de stage hebdo, et envoi (brouillon Gmail + Google Doc Drive). Mi
 - Hébergement **Vercel** + Cron ; commits GitHub auto quotidien + repos configurables
 - **TDD strict** (Red → Green → Refactor) — voir `docs/TDD_WORKFLOW.md`
 
-## ▶️ Prochaine action (Phase 3 — GitHub)
-TDD `src/lib/github/client.ts` (fetch mocké, comme `src/lib/llm/gemini.test.ts`) :
-1. **Red** — `client.test.ts` : `fetchCommits({ repo, since, until, author, token })` appelle
-   `https://api.github.com/repos/{repo}/commits` avec le bon `Authorization: Bearer`, mappe
-   chaque commit → `{ sha (7), message, date }`. Cas : 200, 401 (throw), 404 (retourne []).
-2. **Green** puis `importCommits(commits[])` : dédup par `sha`, formatage pour la section notes.
-3. `typecheck` + `lint`.
+## ▶️ Prochaine action (Phase 4b — rapport long, pur)
+TDD `src/lib/report/longReport.ts` : `buildLongReportBlocks(long, meta)` qui transforme le `long`
+(objet, activites_realisees, livrables, tests_effectues, difficultes, planification, conclusion) en
+une **liste ordonnée de blocs** (`{ type: 'heading1'|'heading2'|'paragraph'|'bullet', text }`),
+avec les 7 sections numérotées et les replis « Aucun … » quand une liste est vide.
+Référence : `code.gs` `creerDocRapportLong`. Ces blocs alimenteront ensuite l'API Google Docs.
+1. **Red** `longReport.test.ts` (ordre des sections, replis, titres). 2. **Green**. 3. `typecheck`+`lint`.
 
-> Logique de référence : `code.gs` `recupererCommitsDepot` / `ajouterCommitsDansNotes`.
-> Ensuite Phases 4-5 (builders Drive/Gmail + orchestration, mockés).
-> **Bloqué côté toi** (à faire ensemble plus tard) : Supabase (projet + clés), Google OAuth
+> Ensuite, wiring Google (Docs/Drive + Gmail draft avec threading In-Reply-To/References) et Supabase.
+> **Bloqué côté toi** (à faire ensemble) : Supabase (projet + clés), Google OAuth
 > (scopes gmail.compose/drive.file/documents), déploiement Vercel + `CRON_SECRET`, vraies clés API.
 
 ## 🗂️ Fichiers de cadrage

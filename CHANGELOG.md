@@ -24,10 +24,16 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · Versionnage
 - **Phase 2 — Providers IA (terminée)** : abstraction `LlmProvider`, `createGeminiProvider`
   (défaut, free tier), `createGroqProvider`, fabrique `createLlmProvider` ; pipeline
   `generateReport` (notes → prompt → IA → rapport validé), providers testés avec `fetch` mocké.
-- Suite : **33 tests verts**, `typecheck` et `lint` OK.
+- **Phase 3 — GitHub (terminée)** : `client.ts` (`fetchCommits`, `fetch` mocké, cas 200/401/404/500,
+  mapping sha court/message/date) + `importCommits.ts` (`dedupeCommits` par sha,
+  `formatCommitsForNotes` groupé par dépôt). Porté de `code.gs`.
+- **Phase 4a — Email (terminée)** : `emailHtml.ts` (`buildEmailHtml`) — corps HTML de la version
+  courte, gère mono/multi-projets et les replis « aucun blocage », porté de `creerBrouillonReponse`.
+- Suite : **46 tests verts**, `typecheck` et `lint` OK.
 
 ### À venir
-- Phase 3 : `src/lib/github/` (client commits + `importCommits`, API mockée).
+- Phase 4b : builder pur du rapport long (`long` → blocs de document) avant l'appel Docs/Drive API.
+- Bloqué (nécessite comptes/secrets) : Google OAuth, Supabase, déploiement Vercel.
 
 ---
 
