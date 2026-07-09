@@ -106,3 +106,73 @@ export async function createReplyDraft(
   const data = (await res.json()) as { id: string; message?: { threadId?: string } };
   return { draftId: data.id, threadId: data.message?.threadId ?? thread.threadId };
 }
+
+// ─── getGmailThread ────────────────────────────────────────────────────────
+
+const THREADS_URL = "https://gmail.googleapis.com/gmail/v1/users/me/threads";
+
+interface GmailApiHeader {
+  name: string;
+  value: string;
+}
+
+interface GmailApiMessage {
+  id: string;
+  payload?: { headers?: GmailApiHeader[] };
+}
+
+interface GmailApiThread {
+  id: string;
+  messages?: GmailApiMessage[];
+}
+
+function headerValue(headers: GmailApiHeader[], name: string): string {
+  return headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? "";
+}
+
+/**
+ * Récupère les métadonnées d'un fil Gmail (From, Message-ID, Subject de chaque
+ * message) — nécessaire pour construire un brouillon threadé.
+ */
+export async function getGmailThread(
+  accessToken: string,
+  threadId: string,
+  opts?: { fetchImpl?: FetchLike },
+): Promise<GmailThread> {
+  const doFetch = opts?.fetchImpl ?? fetch;
+
+  const url =
+    `${THREADS_URL}/${encodeURIComponent(threadId)}?` +
+    new URLSearchParams({
+      format: "metadata",
+      metadataHeaders: ["From", "Message-ID", "Subject"].join(","),
+    }).toString();
+
+  const res = await doFetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Récupération thread Gmail échouée (${res.status}) : ${await res.text()}`);
+  }
+
+  const data = (await res.json()) as GmailApiThread;
+  const messages = (data.messages ?? []).map((m) => {
+    const headers = m.payload?.headers ?? [];
+    return {
+      from: headerValue(headers, "From"),
+      messageId: headerValue(headers, "Message-ID"),
+    };
+  });
+
+  const firstSubject =
+    data.messages?.[0]?.payload?.headers
+      ? headerValue(data.messages[0].payload.headers, "Subject")
+      : "";
+
+  return { threadId: data.id, firstSubject, messages };
+}

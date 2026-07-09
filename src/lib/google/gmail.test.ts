@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { createReplyDraft } from "./gmail";
+import { createReplyDraft, getGmailThread } from "./gmail";
 import type { Report } from "@/domain/reportSchema";
 
 const court: Report["court"] = {
@@ -91,5 +91,70 @@ describe("createReplyDraft", () => {
         fetchImpl: fetchImpl as unknown as typeof fetch,
       }),
     ).rejects.toThrow(/401/);
+  });
+});
+
+describe("getGmailThread", () => {
+  const gmailApiResponse = {
+    id: "thread-42",
+    messages: [
+      {
+        id: "msg-1",
+        payload: {
+          headers: [
+            { name: "From", value: "alice@example.com" },
+            { name: "Message-ID", value: "<msg-1@mail>" },
+            { name: "Subject", value: "Rapport de stage" },
+          ],
+        },
+      },
+      {
+        id: "msg-2",
+        payload: {
+          headers: [
+            { name: "From", value: "bob@example.com" },
+            { name: "Message-ID", value: "<msg-2@mail>" },
+            { name: "Subject", value: "Re: Rapport de stage" },
+          ],
+        },
+      },
+    ],
+  };
+
+  it("récupère un thread et extrait From/Message-ID/Subject", async () => {
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) =>
+      new Response(JSON.stringify(gmailApiResponse), { status: 200 }),
+    );
+
+    const result = await getGmailThread("tok", "thread-42", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(result.threadId).toBe("thread-42");
+    expect(result.firstSubject).toBe("Rapport de stage");
+    expect(result.messages).toHaveLength(2);
+    expect(result.messages[0]).toEqual({ from: "alice@example.com", messageId: "<msg-1@mail>" });
+    expect(result.messages[1]).toEqual({ from: "bob@example.com", messageId: "<msg-2@mail>" });
+
+    const [url] = fetchImpl.mock.calls[0];
+    expect(String(url)).toContain("threads/thread-42");
+    expect(String(url)).toContain("format=metadata");
+  });
+
+  it("lève sur erreur API", async () => {
+    const fetchImpl = vi.fn(async () => new Response("not found", { status: 404 }));
+    await expect(
+      getGmailThread("tok", "bad-id", { fetchImpl: fetchImpl as unknown as typeof fetch }),
+    ).rejects.toThrow(/404/);
+  });
+
+  it("gère un thread sans messages", async () => {
+    const fetchImpl = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) =>
+      new Response(JSON.stringify({ id: "t", messages: [] }), { status: 200 }),
+    );
+    const result = await getGmailThread("tok", "t", {
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(result.messages).toEqual([]);
   });
 });

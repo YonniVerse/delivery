@@ -33,7 +33,28 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · Versionnage
     numérotées, replis « Aucun … »), portée de `creerDocRapportLong`.
   - `google/gmailThread.ts` — helpers purs de threading (`pickReplyReference`, `buildReplySubject`,
     `buildReplyHeaders`), portés de `creerBrouillonReponse`.
-- Suite : **57 tests verts**, `typecheck` et `lint` OK.
+- **Phase 0 (complétée) — env typé** : `src/lib/env.ts` (`loadEnv`/`getEnv`) — lecteur
+  d'environnement server-only validé par Zod, exige la clé du provider IA sélectionné. TDD.
+- **Phase 5a — Persistance Supabase** :
+  - Migration `supabase/migrations/0001_init.sql` : tables `settings`/`projects`/`repos`/`weeks`/
+    `notes`/`commits`/`reports`/`oauth_tokens` + contraintes (unicité notes par section, commits par
+    sha) + index + **RLS** (policies `authenticated`).
+  - `src/lib/supabase/` : types `Database` (miroir SQL) + fabriques client anon / service-role.
+  - Repositories TDD (`settings`/`weeks`/`notes`/`commits`/`reports`) avec faux client Supabase
+    chaînable (`src/test/fakeSupabase.ts`) : upsert notes par section, insert commits idempotent.
+- **Phase 4 (complétée) — clients Google** (fetch injectable, mocké) :
+  - `google/oauth.ts` — `refreshAccessToken`, `getValidAccessToken` (réutilise/rafraîchit).
+  - `google/docs.ts` — `createLongReport` (documents.create → batchUpdate depuis `Block[]` →
+    déplacement Drive), mapping blocs → requêtes Docs (headings/bullets).
+  - `google/gmail.ts` — `createReplyDraft` (MIME base64url threadé, réutilise `gmailThread` +
+    `buildEmailHtml`), en-têtes In-Reply-To/References, `Re:` non doublé.
+- **Phase 5b — Orchestration (terminée)** :
+  - `repositories/projectsRepo.ts` et `repositories/reposRepo.ts` ajoutés (TDD).
+  - `google/gmail.ts` : ajout de `getGmailThread` pour lire les métadonnées d'un fil.
+  - `orchestration/importDailyCommits.ts` : pipeline d'import GitHub → dédoublonnage → upsert Supabase → mise à jour de la section notes "commits".
+  - `orchestration/runWeeklyReport.ts` : vérification idempotence → génération IA → Google Doc → brouillon Gmail → mise à jour statut `draft_created`.
+  - `orchestration/closeWeek.ts` : archivage de la semaine courante et création de la suivante.
+- Suite : **108 tests verts** (+17), `typecheck` et `lint` OK.
 
 ### Configuré
 - **Setup des comptes terminé** : `.env.local` rempli (hors git) — Supabase, Google OAuth + Drive,
@@ -41,7 +62,9 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · Versionnage
   Gemini/Google/Supabase à valider au runtime (googleapis injoignable depuis le shell de dev).
 
 ### À venir
-- Wiring **Supabase** (schéma SQL + RLS + repositories en TDD), puis clients Google (Docs/Gmail) + Cron.
+- **Routes API/Cron** (Phase 6), **UI** (Phase 7), **Auth Google** (Phase 8), **PWA/déploiement** (Phase 9).
+- Étapes manuelles à faire côté comptes : appliquer la migration Supabase, config OAuth Google,
+  déploiement Vercel + Cron, validation runtime des clients Google.
 
 ---
 
