@@ -50,6 +50,20 @@ export const reportSchema = z.object({
 
 export type Report = z.infer<typeof reportSchema>;
 
+/** Cycle de vie d'un rapport, de sa génération à l'envoi manuel du brouillon Gmail. */
+export const REPORT_STATUSES = ["pending", "generated", "draft_created", "sent"] as const;
+export type ReportStatus = (typeof REPORT_STATUSES)[number];
+
+/**
+ * Valide un rapport relu de la base, où `long_json` / `short_json` sont typés
+ * `unknown`. Renvoie `null` si le rapport est absent ou hors schéma : l'aperçu
+ * ne doit pas planter sur une donnée écrite par une version antérieure.
+ */
+export function parseStoredReport(long: unknown, court: unknown): Report | null {
+  const resultat = reportSchema.safeParse({ long, court });
+  return resultat.success ? resultat.data : null;
+}
+
 /** Retire d'éventuels délimiteurs markdown ```json … ``` autour du JSON. */
 function stripFences(raw: string): string {
   return raw

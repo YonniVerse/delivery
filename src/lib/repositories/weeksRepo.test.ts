@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createFakeSupabase } from "@/test/fakeSupabase";
-import { getActiveWeek, createWeek, setWeekStatus } from "./weeksRepo";
+import { getActiveWeek, createWeek, setWeekStatus, listWeeks } from "./weeksRepo";
 import type { WeekRow } from "@/lib/supabase/types";
 
 function week(overrides: Partial<WeekRow> = {}): WeekRow {
@@ -55,5 +55,28 @@ describe("weeksRepo", () => {
       status: "archived",
     });
     expect(calls.some((c) => c.method === "eq" && c.args[1] === "w1")).toBe(true);
+  });
+});
+
+describe("listWeeks", () => {
+  it("retourne toutes les semaines, de la plus récente à la plus ancienne", async () => {
+    const semaines = [week(), week({ id: "w2", status: "archived" })];
+    const { client, calls } = createFakeSupabase({ weeks: { data: semaines, error: null } });
+
+    await expect(listWeeks(client)).resolves.toEqual(semaines);
+    expect(calls.find((c) => c.method === "order")?.args).toEqual([
+      "start_date",
+      { ascending: false },
+    ]);
+  });
+
+  it("retourne une liste vide quand il n'y a aucune semaine", async () => {
+    const { client } = createFakeSupabase({ weeks: { data: null, error: null } });
+    await expect(listWeeks(client)).resolves.toEqual([]);
+  });
+
+  it("propage l'erreur Supabase", async () => {
+    const { client } = createFakeSupabase({ weeks: { data: null, error: { message: "boum" } } });
+    await expect(listWeeks(client)).rejects.toThrow("listWeeks: boum");
   });
 });

@@ -137,15 +137,32 @@ Gmail (fil) → statut `draft_created`. **L'utilisateur relit et envoie depuis G
 - [ ] `closeWeek(week)` : archivage + création semaine suivante
 
 ### Phase 6 — API & Cron
-- [ ] Route `/api/cron/commits` (auth cron, idempotent) + test
-- [ ] Route `/api/cron/report` + test
-- [ ] Routes actions UI : générer, importer commits, clôturer
+- [x] Route `/api/cron/commits` (auth cron, idempotent) + test
+- [x] Route `/api/cron/report` + test
+- [x] Routes actions UI : générer, importer commits, clôturer
+
+> Garde commun `Authorization: Bearer CRON_SECRET` (`src/lib/api/auth.ts`), partagé par les routes
+> cron et actions ; la Phase 8 remplacera le garde des actions par la session Supabase.
+> Schedules dans `vercel.json` — **Vercel Cron est en UTC** : `0 13 * * *` et `30 13 * * 5`
+> correspondent à 16h00 et vendredi 16h30 à Antananarivo (UTC+3), à l'identique de `code.gs`.
+> Madagascar n'observe pas l'heure d'été : la correspondance est stable toute l'année.
 
 ### Phase 7 — UI
-- [ ] Éditeur de notes (autosave, sections) + tests composant
-- [ ] Écran Réglages (projets, repos, destinataires, provider)
-- [ ] Aperçu rapport (court + long) + bouton Générer
-- [ ] Historique des rapports
+- [x] Éditeur de notes (autosave, sections) + tests composant
+- [x] Écran Réglages (projets, repos, destinataires, provider)
+- [x] Aperçu rapport (court + long) + bouton Générer
+- [x] Historique des rapports
+
+> Pages sous `src/app/(app)/` : `notes`, `rapport`, `reglages`, `historique`.
+> **Lecture par Server Component, écriture par Server Action**, toutes deux avec le client
+> service-role : la RLS vise `authenticated` et l'auth n'arrive qu'en Phase 8 — un client
+> navigateur serait rejeté, et il ne peut pas détenir `CRON_SECRET`.
+> ⚠️ Service-role + aucune auth = accès total pour qui atteint l'URL. **Ne pas déployer avant la
+> Phase 8** (le déploiement est de toute façon en Phase 9).
+> Composants présentationnels : ils reçoivent données et fonctions de sauvegarde **en props**, donc
+> testables avec de simples espions — ni Supabase ni réseau en test.
+> Le bouton « Générer » appelle `runReport` **en process** (`src/lib/api/operations.ts`), pas via
+> HTTP sur notre propre route ; il échoue tant que `oauth_tokens` est vide (Phase 8) et l'affiche.
 
 ### Phase 8 — Auth & sécurité
 - [ ] Google OAuth (Supabase) avec scopes Gmail/Drive/Docs

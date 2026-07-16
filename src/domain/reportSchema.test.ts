@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseReportResponse } from "./reportSchema";
+import { parseReportResponse, parseStoredReport } from "./reportSchema";
 
 const multiProjets = {
   long: {
@@ -62,5 +62,24 @@ describe("parseReportResponse", () => {
     const invalide = structuredClone(multiProjets) as Record<string, unknown>;
     delete (invalide.long as Record<string, unknown>).conclusion;
     expect(() => parseReportResponse(JSON.stringify(invalide))).toThrow();
+  });
+});
+
+describe("parseStoredReport", () => {
+  it("valide les deux colonnes JSON relues de la base", () => {
+    const rapport = parseStoredReport(multiProjets.long, multiProjets.court);
+
+    expect(rapport?.long.objet).toBe("Introduction");
+    expect(rapport?.court.intro).toBe("Voici un résumé...");
+  });
+
+  it("renvoie null quand le rapport n'a pas encore été généré", () => {
+    expect(parseStoredReport(null, null)).toBeNull();
+  });
+
+  it("renvoie null plutôt que de lever sur un JSON hors schéma", () => {
+    // Les colonnes sont typées `unknown` : l'UI ne doit pas planter sur une
+    // donnée écrite par une version antérieure du schéma.
+    expect(parseStoredReport({ objet: "incomplet" }, multiProjets.court)).toBeNull();
   });
 });

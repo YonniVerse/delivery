@@ -20,6 +20,16 @@ export async function getActiveWeek(client: DbClient): Promise<WeekRow | null> {
   return (data as WeekRow) ?? null;
 }
 
+/** Toutes les semaines, de la plus récente à la plus ancienne (écran Historique). */
+export async function listWeeks(client: DbClient): Promise<WeekRow[]> {
+  const { data, error } = await client
+    .from("weeks")
+    .select("*")
+    .order("start_date", { ascending: false });
+  if (error) throw new Error(`listWeeks: ${error.message}`);
+  return (data as WeekRow[]) ?? [];
+}
+
 export async function createWeek(client: DbClient, input: CreateWeekInput): Promise<WeekRow> {
   const { data, error } = await client
     .from("weeks")

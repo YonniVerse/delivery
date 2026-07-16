@@ -3,9 +3,11 @@
  * Maintenu à la main (le projet n'utilise pas la génération de types Supabase CLI ici).
  */
 import type { SectionKey } from "@/domain/notes";
+import type { ReportStatus } from "@/domain/reportSchema";
+
+export type { ReportStatus };
 
 export type WeekStatus = "active" | "archived";
-export type ReportStatus = "pending" | "generated" | "draft_created" | "sent";
 export type LlmProviderName = "gemini" | "groq";
 
 export type SettingsRow = {

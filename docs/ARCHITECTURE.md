@@ -30,13 +30,38 @@ src/
     llm/             # LlmProvider, GeminiProvider, GroqProvider
     github/          # client commits
     google/          # drive/docs (rapport long) + gmail (brouillon threadé) + oauth
-    supabase/        # client + repositories typés
+    supabase/        # client typé (anon + service-role)
+    repositories/    # accès tables typés (settings, weeks, notes, commits, reports, oauth_tokens)
+    orchestration/   # importDailyCommits, runWeeklyReport, closeWeek (deps injectées)
+    api/             # operations (métier), handlers (HTTP), auth (garde Bearer), googleAuth, deps
     env.ts           # lecture env validée (Zod)
+  components/        # ui/ (shadcn) + EtatMessage (encart erreur/vide partagé)
   app/               # Next.js App Router
-    (ui)/            # pages : notes, réglages, aperçu, historique
-    api/             # Route Handlers (actions UI)
-    api/cron/        # commits, report (protégés par secret Cron)
+    (app)/           # pages : notes, rapport, reglages, historique (+ actions.ts par écran)
+    api/actions/     # Route Handlers UI (POST) : commits, report, close-week
+    api/cron/        # commits, report (GET, protégés par secret Cron)
 ```
+
+**Découplage opérations / transport** : le métier vit dans `lib/api/operations.ts` et reçoit ses
+dépendances par un `ctx` (client, orchestration, provider IA) ; il renvoie un résultat discriminé
+(`ok` / `no_week` / `error`), pas une `Response`. `lib/api/handlers.ts` n'ajoute que le garde d'auth
+et la traduction en JSON ; les `app/api/**/route.ts` sont des délégations d'une ligne. Seul
+`lib/api/deps.ts` lit l'environnement et crée les clients — d'où des opérations testables sans env
+ni réseau, et réutilisables **en process** par les Server Actions de l'UI.
+
+**Sens des dépendances** : `lib → domain`, jamais l'inverse. `lib/supabase/types.ts` importe
+`SectionKey` et `ReportStatus` du domaine ; `domain/history.ts` décrit ses entrées structurellement
+plutôt que d'importer les Row.
+
+**UI (Phase 7)** : lecture par Server Component, écriture par Server Action, toutes deux via le
+client **service-role**. Ce n'est pas un choix de style : la RLS vise `authenticated`, l'auth arrive
+en Phase 8, et le navigateur ne peut pas détenir `CRON_SECRET`. ⚠️ Sans auth, service-role = accès
+total pour qui atteint l'URL — **ne pas déployer avant la Phase 8**.
+Les composants sont présentationnels : données et fonctions de sauvegarde arrivent **en props**
+(même principe d'injection que le `ctx` des opérations), ce qui les rend testables sans Supabase.
+Chaque page isole son chargement du rendu (`charger()` → état discriminé) : un `try/catch` autour du
+JSON n'attraperait pas les erreurs de rendu, et une base injoignable doit donner un encart lisible,
+pas une stack trace.
 
 ## Flux détaillés
 

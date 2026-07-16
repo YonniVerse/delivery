@@ -54,7 +54,51 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · Versionnage
   - `orchestration/importDailyCommits.ts` : pipeline d'import GitHub → dédoublonnage → upsert Supabase → mise à jour de la section notes "commits".
   - `orchestration/runWeeklyReport.ts` : vérification idempotence → génération IA → Google Doc → brouillon Gmail → mise à jour statut `draft_created`.
   - `orchestration/closeWeek.ts` : archivage de la semaine courante et création de la suivante.
-- Suite : **108 tests verts** (+17), `typecheck` et `lint` OK.
+- **Phase 6 — API & Cron (terminée)** :
+  - `repositories/oauthTokensRepo.ts` (TDD) : `getOAuthToken`/`saveOAuthToken` — la table
+    `oauth_tokens` existait depuis la Phase 5a sans repository pour la lire.
+  - `api/auth.ts` (TDD) : garde `Authorization: Bearer CRON_SECRET`, comparaison à temps constant,
+    refus si le secret attendu est vide. Partagé par les routes cron **et** actions.
+  - `api/googleAuth.ts` (TDD) : `resolveAccessToken` — lit le jeton en base, le rafraîchit via
+    `getValidAccessToken` et ne le re-persiste que s'il a changé.
+  - `api/handlers.ts` (TDD) : `handleImportCommits`, `handleReport`, `handleCloseWeek` — garde →
+    semaine active → orchestration. Contrat commun 401 / 409 (aucune semaine active) / 200 / 500
+    (détail logué côté serveur, jamais renvoyé au client).
+  - `api/deps.ts` : composition root — seul module qui lit l'env et crée les clients.
+  - Routes : `/api/cron/commits` et `/api/cron/report` (GET, Vercel Cron) ; `/api/actions/commits`,
+    `/api/actions/report`, `/api/actions/close-week` (POST, future UI).
+  - `vercel.json` : schedules `0 13 * * *` et `30 13 * * 5` (UTC) = 16h00 quotidien et vendredi
+    16h30 à Antananarivo, à l'identique de `code.gs`.
+- Suite : **139 tests verts** (+31), `typecheck` et `lint` OK.
+
+- **Phase 7 — UI (terminée)** : les 4 écrans de l'application, sous `src/app/(app)/`.
+  - **Fondations** : shadcn/ui installé (Tailwind v4 / React 19), `layout.tsx` en `lang="fr"` avec
+    titre réel, coque `(app)/layout.tsx` + navigation, `/` redirige vers `/notes`.
+  - **Éditeur de notes** (TDD, 12 tests) : les 7 sections de `SECTION_KEYS`, placeholders portés de
+    `code.gs`, **autosave debounce 800 ms par section**, états par section
+    (enregistrement / enregistré / échec), **garde anti-course** (le retour d'un enregistrement
+    obsolète n'écrase pas l'état d'une saisie plus récente), section `commits` en **lecture seule**
+    (le cron GitHub la réécrit) — refusée aussi côté Server Action.
+  - **Aperçu rapport** (TDD, 8 tests) : onglets court / long, validation Zod des colonnes
+    `long_json` / `short_json` (typées `unknown`) via `parseStoredReport` — un JSON hors schéma
+    donne un encart « illisible », pas un plantage ; bouton **Générer** réellement câblé, échec
+    affiché.
+  - **Réglages** (TDD, 19 tests) : identité / destinataires / CC / sujet du fil / provider IA ;
+    CRUD projets (**rôle obligatoire** — le prompt impose un respect strict des rôles) ; CRUD dépôts
+    avec validation du format `owner/repo`.
+  - **Historique** (TDD, 5 tests) : une ligne par semaine, statut en français, lien Google Doc,
+    état vide.
+  - **Repositories manquants** (TDD) : `listProjects` + CRUD projets, `listRepos` + CRUD dépôts,
+    `listReports`, `listWeeks` — les écrans Réglages et Historique en avaient besoin.
+  - **`domain/history.ts`** (TDD, pur) : `joinReportsToWeeks` — jointure en mémoire (le type
+    `Database` fait main type mal les selects imbriqués), semaines sans rapport en `pending`,
+    rapports orphelins ignorés.
+  - **`api/operations.ts`** : extraction du métier hors de `handlers.ts`, résultat discriminé
+    (`ok` / `no_week` / `error`) au lieu d'une `Response`. Permet au bouton « Générer » d'appeler
+    `runReport` **en process**. `handlers.ts` ne garde que l'auth et le mapping HTTP ; les tests
+    Phase 6 restent verts **sans modification**.
+  - `ReportStatus` déplacé dans le domaine (comme `SectionKey`) pour garder le sens `lib → domain`.
+- Suite : **225 tests verts** (+86), `typecheck`, `lint` et `next build` OK.
 
 ### Configuré
 - **Setup des comptes terminé** : `.env.local` rempli (hors git) — Supabase, Google OAuth + Drive,
@@ -62,8 +106,9 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) · Versionnage
   Gemini/Google/Supabase à valider au runtime (googleapis injoignable depuis le shell de dev).
 
 ### À venir
-- **Routes API/Cron** (Phase 6), **UI** (Phase 7), **Auth Google** (Phase 8), **PWA/déploiement** (Phase 9).
-- Étapes manuelles à faire côté comptes : appliquer la migration Supabase, config OAuth Google,
+- **Auth Google** (Phase 8), **PWA/déploiement** (Phase 9).
+- Étapes manuelles à faire côté comptes : **corriger `NEXT_PUBLIC_SUPABASE_URL` dans `.env.local`
+  (voir `NEXT_SESSION.md`)**, appliquer la migration Supabase, config OAuth Google,
   déploiement Vercel + Cron, validation runtime des clients Google.
 
 ---

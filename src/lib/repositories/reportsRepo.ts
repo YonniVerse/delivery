@@ -15,6 +15,13 @@ export async function getReportForWeek(
   return (data as ReportRow) ?? null;
 }
 
+/** Tous les rapports — l'écran Historique les recoupe avec les semaines. */
+export async function listReports(client: DbClient): Promise<ReportRow[]> {
+  const { data, error } = await client.from("reports").select("*");
+  if (error) throw new Error(`listReports: ${error.message}`);
+  return (data as ReportRow[]) ?? [];
+}
+
 export async function upsertReport(
   client: DbClient,
   weekId: string,
